@@ -155,7 +155,7 @@ func (ptn *Partition) GetNodeRead(cluster *Cluster) (*Node, Error) {
 	default:
 		fallthrough
 	case SEQUENCE:
-		return ptn.getSequenceNode(cluster, 0)
+		return ptn.getSequenceNode(cluster)
 
 	case PREFER_RACK:
 		return ptn.getRackNode(cluster)
@@ -182,8 +182,7 @@ func (ptn *Partition) GetNodeWrite(cluster *Cluster) (*Node, Error) {
 	case SEQUENCE:
 		fallthrough
 	case PREFER_RACK:
-		return ptn.getSequenceNode(cluster, 0)
-
+		return ptn.getSequenceNode(cluster)
 	case MASTER:
 		fallthrough
 	case MASTER_PROLES:
@@ -207,10 +206,10 @@ func (ptn *Partition) PrepareRetryWrite(isClientTimeout bool) {
 	}
 }
 
-func (ptn *Partition) getSequenceNode(cluster *Cluster, offset int) (*Node, Error) {
+func (ptn *Partition) getSequenceNode(cluster *Cluster) (*Node, Error) {
 	replicas := ptn.partitions.Replicas
 	for range replicas {
-		index := (ptn.sequence + offset) % len(replicas)
+		index := ptn.sequence % len(replicas)
 		node := replicas[index][ptn.PartitionId]
 
 		if node != nil && node.IsActive() {
