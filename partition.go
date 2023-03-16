@@ -157,9 +157,6 @@ func (ptn *Partition) GetNodeRead(cluster *Cluster) (*Node, Error) {
 	case SEQUENCE:
 		return ptn.getSequenceNode(cluster, 0)
 
-	case REVERSE_SEQUENCE:
-		return ptn.getSequenceNode(cluster, 1)
-
 	case PREFER_RACK:
 		return ptn.getRackNode(cluster)
 
@@ -168,6 +165,9 @@ func (ptn *Partition) GetNodeRead(cluster *Cluster) (*Node, Error) {
 
 	case MASTER_PROLES:
 		return ptn.getMasterProlesNode(cluster)
+
+	case PREFER_REPLICA:
+		return ptn.getReplicaNode(cluster)
 
 	case RANDOM:
 		return cluster.GetRandomNode()
@@ -278,6 +278,21 @@ func (ptn *Partition) getMasterProlesNode(cluster *Cluster) (*Node, Error) {
 	}
 	nodeArray := cluster.GetNodes()
 	return nil, newInvalidNodeError(len(nodeArray), ptn)
+}
+
+func (ptn *Partition) getReplicaNode(cluster *Cluster) (*Node, Error) {
+	replicas := ptn.partitions.Replicas
+
+	for range replicas[1:] {
+		index := int(atomic.AddUint64(&cluster.replicaIndex, 1)%uint64(len(replicas)-1)) + 1
+		node := replicas[index][ptn.PartitionId]
+
+		if node != nil && node.IsActive() {
+			return node, nil
+		}
+	}
+
+	return ptn.getMasterNode(cluster)
 }
 
 // String implements the Stringer interface.

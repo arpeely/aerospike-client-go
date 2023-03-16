@@ -40,9 +40,9 @@ const (
 	// but writes remain on master node.
 	SEQUENCE
 
-	// REVERSE_SEQUENCE Tries node containing replicated partitions first.
+	// PREFER_REPLICA Tries node containing replicated partitions first.
 	// After all replicated nodes failed it will try master
-	REVERSE_SEQUENCE
+	PREFER_REPLICA
 
 	// PREFER_RACK Tries nodes on the same rack first.
 	//
