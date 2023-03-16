@@ -155,7 +155,7 @@ func NewPolicy() *BasePolicy {
 		MaxRetries:          2,
 		SleepBetweenRetries: 1 * time.Millisecond,
 		SleepMultiplier:     1.0,
-		ReplicaPolicy:       SEQUENCE,
+		ReplicaPolicy:       REVERSE_SEQUENCE,
 		SendKey:             false,
 		UseCompression:      false,
 	}
