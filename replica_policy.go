@@ -40,10 +40,8 @@ const (
 	// but writes remain on master node.
 	SEQUENCE
 
-	// REVERSE_SEQUENCE Tries node containing replicated partition first.
-	// If connection fails, all commands try nodes containing replicated partitions.
-	// If socketTimeout is reached, reads also try nodes containing replicated partitions,
-	// but writes remain on master node.
+	// REVERSE_SEQUENCE Tries node containing replicated partitions first.
+	// After all replicated nodes failed it will try master
 	REVERSE_SEQUENCE
 
 	// PREFER_RACK Tries nodes on the same rack first.

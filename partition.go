@@ -155,7 +155,10 @@ func (ptn *Partition) GetNodeRead(cluster *Cluster) (*Node, Error) {
 	default:
 		fallthrough
 	case SEQUENCE:
-		return ptn.getSequenceNode(cluster)
+		return ptn.getSequenceNode(cluster, 0)
+
+	case REVERSE_SEQUENCE:
+		return ptn.getSequenceNode(cluster, 1)
 
 	case PREFER_RACK:
 		return ptn.getRackNode(cluster)
@@ -165,9 +168,6 @@ func (ptn *Partition) GetNodeRead(cluster *Cluster) (*Node, Error) {
 
 	case MASTER_PROLES:
 		return ptn.getMasterProlesNode(cluster)
-
-	case REVERSE_SEQUENCE:
-		return ptn.getReverseSequenceNode(cluster)
 
 	case RANDOM:
 		return cluster.GetRandomNode()
@@ -182,7 +182,7 @@ func (ptn *Partition) GetNodeWrite(cluster *Cluster) (*Node, Error) {
 	case SEQUENCE:
 		fallthrough
 	case PREFER_RACK:
-		return ptn.getSequenceNode(cluster)
+		return ptn.getSequenceNode(cluster, 0)
 
 	case MASTER:
 		fallthrough
@@ -207,25 +207,10 @@ func (ptn *Partition) PrepareRetryWrite(isClientTimeout bool) {
 	}
 }
 
-func (ptn *Partition) getSequenceNode(cluster *Cluster) (*Node, Error) {
+func (ptn *Partition) getSequenceNode(cluster *Cluster, offset int) (*Node, Error) {
 	replicas := ptn.partitions.Replicas
 	for range replicas {
-		index := ptn.sequence % len(replicas)
-		node := replicas[index][ptn.PartitionId]
-
-		if node != nil && node.IsActive() {
-			return node, nil
-		}
-		ptn.sequence++
-	}
-	nodeArray := cluster.GetNodes()
-	return nil, newInvalidNodeError(len(nodeArray), ptn)
-}
-
-func (ptn *Partition) getReverseSequenceNode(cluster *Cluster) (*Node, Error) {
-	replicas := ptn.partitions.Replicas
-	for range replicas {
-		index := (len(replicas) - 1) - ptn.sequence
+		index := (ptn.sequence + offset) % len(replicas)
 		node := replicas[index][ptn.PartitionId]
 
 		if node != nil && node.IsActive() {

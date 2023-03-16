@@ -74,7 +74,6 @@ func NewClient(hostname string, port int) (*Client, Error) {
 // NewClientWithPolicy generates a new Client using the specified ClientPolicy.
 // If the policy is nil, the default relevant policy will be used.
 func NewClientWithPolicy(policy *ClientPolicy, hostname string, port int) (*Client, Error) {
-	fmt.Println("WALAK MA HAMTZAV ZE ARPEELY PO")
 	return NewClientWithPolicyAndHost(policy, NewHost(hostname, port))
 }
 
