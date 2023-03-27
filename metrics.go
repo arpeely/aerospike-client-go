@@ -2,9 +2,9 @@ package aerospike
 
 import "time"
 
-var flow func(string, string, time.Time) = nil
+var flow func(string, string, time.Time) error = nil
 
-func InitializeMetrics(flowFunc func(string, string, time.Time)) {
+func InitializeMetrics(flowFunc func(string, string, time.Time) error) {
 	flow = flowFunc
 }
 
