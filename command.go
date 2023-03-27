@@ -2532,7 +2532,9 @@ func (cmd *baseCommand) executeAt(ifc command, policy *BasePolicy, isRead bool, 
 			continue
 		}
 
+		t := time.Now()
 		cmd.conn, err = ifc.getConnection(policy)
+		FlowMetrics(isRead, "executeAt.getConnection", t)
 		if err != nil {
 			isClientTimeout = false
 
@@ -2560,7 +2562,9 @@ func (cmd *baseCommand) executeAt(ifc command, policy *BasePolicy, isRead bool, 
 		cmd.dataBuffer = cmd.conn.dataBuffer
 
 		// Set command buffer.
+		t = time.Now()
 		err = ifc.writeBuffer(ifc)
+		FlowMetrics(isRead, "executeAt.writeBuffer", t)
 		if err != nil {
 			// chain the errors
 			err = chainErrors(err, errChain).iter(cmd.commandSentCounter).setNode(cmd.node)
@@ -2593,7 +2597,9 @@ func (cmd *baseCommand) executeAt(ifc command, policy *BasePolicy, isRead bool, 
 		// }
 
 		// Send command.
+		t = time.Now()
 		_, err = cmd.conn.Write(cmd.dataBuffer[:cmd.dataOffset])
+		FlowMetrics(isRead, "executeAt.Write", t)
 		if err != nil {
 			// chain the errors
 			errChain = chainErrors(err, errChain).iter(cmd.commandSentCounter).setNode(cmd.node)
@@ -2614,7 +2620,9 @@ func (cmd *baseCommand) executeAt(ifc command, policy *BasePolicy, isRead bool, 
 		commandSentCounter++
 
 		// Parse results.
+		t = time.Now()
 		err = ifc.parseResult(ifc, cmd.conn)
+		FlowMetrics(isRead, "executeAt.parseResult", t)
 		if err != nil {
 			// chain the errors
 			errChain = chainErrors(err, errChain).iter(cmd.commandSentCounter).setNode(cmd.node)

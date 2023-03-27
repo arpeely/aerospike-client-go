@@ -163,13 +163,16 @@ func (clnt *Client) Put(policy *WritePolicy, key *Key, binMap BinMap) Error {
 // This method avoids using the BinMap allocation and iteration and is lighter on GC.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) PutBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
+	t := time.Now()
 	policy = clnt.getUsableWritePolicy(policy)
 	command, err := newWriteCommand(clnt.cluster, policy, key, bins, nil, _WRITE)
 	if err != nil {
 		return err
 	}
 
-	return command.Execute()
+	err = command.Execute()
+	FlowMetrics(false, "PutBins", t)
+	return err
 }
 
 //-------------------------------------------------------
@@ -350,6 +353,7 @@ func (clnt *Client) BatchExists(policy *BatchPolicy, keys []*Key) ([]bool, Error
 // The policy can be used to specify timeouts.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Get(policy *BasePolicy, key *Key, binNames ...string) (*Record, Error) {
+	t := time.Now()
 	policy = clnt.getUsablePolicy(policy)
 
 	command, err := newReadCommand(clnt.cluster, policy, key, binNames, nil)
@@ -360,6 +364,7 @@ func (clnt *Client) Get(policy *BasePolicy, key *Key, binNames ...string) (*Reco
 	if err := command.Execute(); err != nil {
 		return nil, err
 	}
+	FlowMetrics(true, "Get", t)
 	return command.GetRecord(), nil
 }
 
@@ -592,6 +597,7 @@ func (clnt *Client) BatchExecute(policy *BatchPolicy, udfPolicy *BatchUDFPolicy,
 //
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Operate(policy *WritePolicy, key *Key, operations ...*Operation) (*Record, Error) {
+	t := time.Now()
 	policy = clnt.getUsableWritePolicy(policy)
 	args, err := newOperateArgs(clnt.cluster, policy, key, operations)
 	if err != nil {
@@ -605,6 +611,7 @@ func (clnt *Client) Operate(policy *WritePolicy, key *Key, operations ...*Operat
 	if err := command.Execute(); err != nil {
 		return nil, err
 	}
+	FlowMetrics(!command.args.hasWrite, "Operate", t)
 	return command.GetRecord(), nil
 }
 
