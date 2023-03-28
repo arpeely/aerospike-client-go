@@ -17,6 +17,7 @@ package aerospike
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/aerospike/aerospike-client-go/v6/logger"
 	"github.com/aerospike/aerospike-client-go/v6/types"
@@ -82,30 +83,43 @@ func (cmd *readCommand) prepareRetry(ifc command, isTimeout bool) bool {
 
 func (cmd *readCommand) parseResult(ifc command, conn *Connection) Error {
 	// Read proto and check if compressed
-	if _, err := conn.Read(cmd.dataBuffer, 8); err != nil {
+	t := time.Now()
+	_, err := conn.Read(cmd.dataBuffer, 8)
+	FlowMetrics(true, "readParseResult.readProto", t)
+	if err != nil {
 		logger.Logger.Debug("Connection error reading data for ReadCommand: %s", err.Error())
 		return err
 	}
 
 	if compressedSize := cmd.compressedSize(); compressedSize > 0 {
 		// Read compressed size
-		if _, err := conn.Read(cmd.dataBuffer, 8); err != nil {
+		t = time.Now()
+		_, err := conn.Read(cmd.dataBuffer, 8)
+		FlowMetrics(true, "readParseResult.readCompressedSize", t)
+		if err != nil {
 			logger.Logger.Debug("Connection error reading data for ReadCommand: %s", err.Error())
 			return err
 		}
 
-		if err := cmd.conn.initInflater(true, compressedSize); err != nil {
+		err = cmd.conn.initInflater(true, compressedSize)
+		if err != nil {
 			return newError(types.PARSE_ERROR, fmt.Sprintf("Error setting up zlib inflater for size `%d`: %s", compressedSize, err.Error()))
 		}
 
 		// Read header.
-		if _, err := conn.Read(cmd.dataBuffer, int(_MSG_TOTAL_HEADER_SIZE)); err != nil {
+		t = time.Now()
+		_, err = conn.Read(cmd.dataBuffer, int(_MSG_TOTAL_HEADER_SIZE))
+		FlowMetrics(true, "readParseResult.readCompressedHeader", t)
+		if err != nil {
 			logger.Logger.Debug("Connection error reading data for ReadCommand: %s", err.Error())
 			return err
 		}
 	} else {
 		// Read header.
-		if _, err := conn.Read(cmd.dataBuffer[8:], int(_MSG_TOTAL_HEADER_SIZE)-8); err != nil {
+		t = time.Now()
+		_, err := conn.Read(cmd.dataBuffer[8:], int(_MSG_TOTAL_HEADER_SIZE)-8)
+		FlowMetrics(true, "readParseResult.readHeader", t)
+		if err != nil {
 			logger.Logger.Debug("Connection error reading data for ReadCommand: %s", err.Error())
 			return err
 		}
@@ -133,7 +147,10 @@ func (cmd *readCommand) parseResult(ifc command, conn *Connection) Error {
 		if err := cmd.sizeBufferSz(receiveSize, false); err != nil {
 			return err
 		}
-		if _, err := conn.Read(cmd.dataBuffer, receiveSize); err != nil {
+		t = time.Now()
+		_, err := conn.Read(cmd.dataBuffer, receiveSize)
+		FlowMetrics(true, "readParseResult.readMessage", t)
+		if err != nil {
 			logger.Logger.Debug("Connection error reading data for ReadCommand: %s", err.Error())
 			return err
 		}

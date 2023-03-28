@@ -16,6 +16,7 @@ package aerospike
 
 import (
 	"github.com/aerospike/aerospike-client-go/v6/types"
+	"time"
 
 	Buffer "github.com/aerospike/aerospike-client-go/v6/utils/buffer"
 )
@@ -74,7 +75,10 @@ func (cmd *writeCommand) prepareRetry(ifc command, isTimeout bool) bool {
 
 func (cmd *writeCommand) parseResult(ifc command, conn *Connection) Error {
 	// Read header.
-	if _, err := conn.Read(cmd.dataBuffer, int(_MSG_TOTAL_HEADER_SIZE)); err != nil {
+	t := time.Now()
+	_, err := conn.Read(cmd.dataBuffer, int(_MSG_TOTAL_HEADER_SIZE))
+	FlowMetrics(false, "writeParseResult.readHeader", t)
+	if err != nil {
 		return err
 	}
 

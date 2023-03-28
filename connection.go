@@ -177,12 +177,21 @@ func NewConnection(policy *ClientPolicy, host *Host) (*Connection, Error) {
 
 // Write writes the slice to the connection buffer.
 func (ctn *Connection) Write(buf []byte) (total int, aerr Error) {
+	t := time.Now()
+
+	defer func() {
+		FlowMetrics(false, "Write", t)
+	}()
+
 	var err error
 
 	// make sure all bytes are written
 	// Don't worry about the loop, timeout has been set elsewhere
 	if err = ctn.updateDeadline(); err == nil {
-		if total, err = ctn.conn.Write(buf); err == nil {
+		t = time.Now()
+		total, err = ctn.conn.Write(buf)
+		FlowMetrics(true, "Write.netWrite", t)
+		if err == nil {
 			return total, nil
 		}
 
@@ -207,6 +216,12 @@ func (ctn *Connection) Write(buf []byte) (total int, aerr Error) {
 
 // Read reads from connection buffer to the provided slice.
 func (ctn *Connection) Read(buf []byte, length int) (total int, aerr Error) {
+	t := time.Now()
+
+	defer func() {
+		FlowMetrics(true, "Read", t)
+	}()
+
 	var err error
 
 	// if all bytes are not read, retry until successful
@@ -218,9 +233,13 @@ func (ctn *Connection) Read(buf []byte, length int) (total int, aerr Error) {
 		}
 
 		if !ctn.compressed {
+			t = time.Now()
 			r, err = ctn.conn.Read(buf[total:length])
+			FlowMetrics(true, "Read.netRead", t)
 		} else {
+			t = time.Now()
 			r, err = ctn.inflater.Read(buf[total:length])
+			FlowMetrics(true, "Read.inflaterNetRead", t)
 			if err == io.EOF && total+r == length {
 				ctn.compressed = false
 				err = ctn.inflater.Close()
